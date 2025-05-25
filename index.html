@@ -46,9 +46,9 @@
         
         const settings = {
             invert: false,
-            brightness: 0,
-            contrast: 1,
-            density: 25,
+            brightness: 84,
+            contrast: 0.5,
+            density: 17,
             resolution: 80
         };
 
@@ -75,7 +75,6 @@
             settings.density = parseInt(document.getElementById('density').value);
             settings.resolution = parseInt(document.getElementById('resolution').value);
 
-            // Update value displays
             document.getElementById('brightnessValue').textContent = settings.brightness;
             document.getElementById('contrastValue').textContent = Math.round(settings.contrast * 100) + '%';
             document.getElementById('densityValue').textContent = settings.density;
@@ -88,10 +87,9 @@
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
             
-            // Calculate dimensions
             const ratio = currentImage.height / currentImage.width;
             const width = Math.min(currentImage.width, settings.resolution);
-            const height = width * ratio * 0.45; // Font aspect compensation
+            const height = width * ratio * 0.45;
 
             canvas.width = width;
             canvas.height = height;
@@ -107,7 +105,6 @@
                     const i = (y * width + x) * 4;
                     const [r, g, b] = data.slice(i, i + 3);
                     
-                    // Convert to grayscale with adjustments
                     let brightness = 0.3 * r + 0.59 * g + 0.11 * b;
                     brightness = ((brightness - 128) * settings.contrast) + 128 + settings.brightness;
                     brightness = Math.max(0, Math.min(255, brightness));
