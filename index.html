@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image to Blocks (Advanced)</title>
+    <style>
+        body { max-width: 800px; margin: 20px auto; font-family: Arial, sans-serif; }
+        .controls { margin: 15px 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .controls label { display: flex; align-items: center; gap: 5px; }
+        #output { white-space: pre; font-family: monospace; line-height: 1; background: #f0f0f0; padding: 10px; }
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+    <input type="file" id="uploader" accept="image/*">
+    
+    <div class="controls">
+        <label>
+            Invert: <input type="checkbox" id="invert" oninput="updateSettings()">
+        </label>
+        <label>
+            Brightness: <input type="range" id="brightness" min="-100" max="100" value="0" oninput="updateSettings()">
+            <span id="brightnessValue">0</span>
+        </label>
+        <label>
+            Contrast: <input type="range" id="contrast" min="50" max="200" value="100" oninput="updateSettings()">
+            <span id="contrastValue">100%</span>
+        </label>
+        <label>
+            Density: <input type="range" id="density" min="1" max="25" value="25" oninput="updateSettings()">
+            <span id="densityValue">25</span>
+        </label>
+        <label>
+            Resolution: <input type="range" id="resolution" min="20" max="200" value="80" oninput="updateSettings()">
+            <span id="resolutionValue">80</span>
+        </label>
+    </div>
+
+    <div class="container">
+        <canvas id="canvas"></canvas>
+        <pre id="output"></pre>
+    </div>
+
+    <script>
+        const blocks = [' ','▁','▂','▃','▄','▅','▆','▇','█','▉','▊','▋','▌','▍','▎','▏','▐','░','▒','▔','▕','▙','▚','▛','▜','▟'];
+        let currentImage = null;
+        
+        const settings = {
+            invert: false,
+            brightness: 0,
+            contrast: 1,
+            density: 25,
+            resolution: 80
+        };
+
+        document.getElementById('uploader').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    currentImage = img;
+                    processImage();
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
+
+        function updateSettings() {
+            settings.invert = document.getElementById('invert').checked;
+            settings.brightness = parseInt(document.getElementById('brightness').value);
+            settings.contrast = parseInt(document.getElementById('contrast').value) / 100;
+            settings.density = parseInt(document.getElementById('density').value);
+            settings.resolution = parseInt(document.getElementById('resolution').value);
+
+            // Update value displays
+            document.getElementById('brightnessValue').textContent = settings.brightness;
+            document.getElementById('contrastValue').textContent = Math.round(settings.contrast * 100) + '%';
+            document.getElementById('densityValue').textContent = settings.density;
+            document.getElementById('resolutionValue').textContent = settings.resolution;
+
+            if (currentImage) processImage();
+        }
+
+        function processImage() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Calculate dimensions
+            const ratio = currentImage.height / currentImage.width;
+            const width = Math.min(currentImage.width, settings.resolution);
+            const height = width * ratio * 0.45; // Font aspect compensation
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(currentImage, 0, 0, width, height);
+            
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const data = imageData.data;
+            
+            let output = '';
+            for (let y = 0; y < height; y++) {
+                let line = '';
+                for (let x = 0; x < width; x++) {
+                    const i = (y * width + x) * 4;
+                    const [r, g, b] = data.slice(i, i + 3);
+                    
+                    // Convert to grayscale with adjustments
+                    let brightness = 0.3 * r + 0.59 * g + 0.11 * b;
+                    brightness = ((brightness - 128) * settings.contrast) + 128 + settings.brightness;
+                    brightness = Math.max(0, Math.min(255, brightness));
+                    
+                    if (settings.invert) brightness = 255 - brightness;
+                    
+                    // Map to blocks
+                    const blockRange = Math.min(settings.density, blocks.length);
+                    const blockIndex = Math.floor((brightness / 255) * (blockRange - 1));
+                    line += blocks[blockIndex];
+                }
+                output += line + '\n';
+            }
+            
+            document.getElementById('output').textContent = output;
+        }
+    </script>
+</body>
+</html>
