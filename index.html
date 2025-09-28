@@ -101,6 +101,11 @@
             background-color: #ff9a7f;
         }
 
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
         .controls-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -255,6 +260,60 @@
             margin-top: 20px;
         }
 
+        .history-container {
+            margin-top: 20px;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .history-item {
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            border-color: var(--primary-color);
+        }
+
+        .history-item.active {
+            border-color: var(--accent-color);
+        }
+
+        .history-item img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+        }
+
+        .config-save-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .config-slot {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .config-name {
+            font-size: 12px;
+            text-align: center;
+            padding: 5px;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+
         canvas {
             display: none;
         }
@@ -350,12 +409,46 @@
                 <!-- Block characters will be populated by JavaScript -->
             </div>
         </div>
+        
+        <div class="control-group">
+            <h3>Configuration Slots</h3>
+            <p>Save and load your favorite settings:</p>
+            <div class="config-save-container">
+                <div class="config-slot">
+                    <div class="config-name" id="configName1">Slot 1 (Empty)</div>
+                    <button class="btn btn-small" data-slot="1" id="saveConfig1">Save</button>
+                    <button class="btn btn-small btn-accent" data-slot="1" id="loadConfig1">Load</button>
+                </div>
+                <div class="config-slot">
+                    <div class="config-name" id="configName2">Slot 2 (Empty)</div>
+                    <button class="btn btn-small" data-slot="2" id="saveConfig2">Save</button>
+                    <button class="btn btn-small btn-accent" data-slot="2" id="loadConfig2">Load</button>
+                </div>
+                <div class="config-slot">
+                    <div class="config-name" id="configName3">Slot 3 (Empty)</div>
+                    <button class="btn btn-small" data-slot="3" id="saveConfig3">Save</button>
+                    <button class="btn btn-small btn-accent" data-slot="3" id="loadConfig3">Load</button>
+                </div>
+                <div class="config-slot">
+                    <div class="config-name" id="configName4">Slot 4 (Empty)</div>
+                    <button class="btn btn-small" data-slot="4" id="saveConfig4">Save</button>
+                    <button class="btn btn-small btn-accent" data-slot="4" id="loadConfig4">Load</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="output-container">
         <div class="preview-area">
             <h3>Image Preview</h3>
             <img id="preview" src="" alt="Preview will appear here">
+            
+            <div class="history-container">
+                <h4>Image History</h4>
+                <div class="history-grid" id="historyGrid">
+                    <!-- History items will be populated by JavaScript -->
+                </div>
+            </div>
         </div>
         <div class="output-area">
             <h3>Block Art Output</h3>
@@ -376,6 +469,7 @@
         const defaultBlocks = [' ','▁','▂','▃','▄','▅','▆','▇','█','▉','▊','▋','▌','▍','▎','▏','▐','░','▒','▔','▕','▙','▚','▛','▜','▟'];
         let currentImage = null;
         let selectedBlocks = [...defaultBlocks];
+        let imageHistory = [];
         
         // Settings object
         const settings = {
@@ -401,6 +495,7 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const blockCharsContainer = document.getElementById('blockCharsContainer');
+        const historyGrid = document.getElementById('historyGrid');
 
         // Initialize block characters
         function initBlockChars() {
@@ -412,6 +507,7 @@
                 charElement.addEventListener('click', () => {
                     charElement.classList.toggle('selected');
                     updateSelectedBlocks();
+                    processImage(); // Process image immediately when settings change
                 });
                 blockCharsContainer.appendChild(charElement);
             });
@@ -463,20 +559,50 @@
                 }
             });
             
-            // Settings controls
-            document.getElementById('invert').addEventListener('change', updateSettings);
-            document.getElementById('brightness').addEventListener('input', updateSettings);
-            document.getElementById('contrast').addEventListener('input', updateSettings);
-            document.getElementById('density').addEventListener('input', updateSettings);
-            document.getElementById('resolution').addEventListener('input', updateSettings);
-            document.getElementById('aspectRatio').addEventListener('input', updateSettings);
-            document.getElementById('colorMode').addEventListener('change', updateSettings);
-            document.getElementById('customBlocks').addEventListener('input', updateSettings);
+            // Settings controls - update settings and process image immediately
+            document.getElementById('invert').addEventListener('change', () => {
+                updateSettings();
+                processImage();
+            });
+            document.getElementById('brightness').addEventListener('input', () => {
+                updateSettings();
+                processImage();
+            });
+            document.getElementById('contrast').addEventListener('input', () => {
+                updateSettings();
+                processImage();
+            });
+            document.getElementById('density').addEventListener('input', () => {
+                updateSettings();
+                processImage();
+            });
+            document.getElementById('resolution').addEventListener('input', () => {
+                updateSettings();
+                processImage();
+            });
+            document.getElementById('aspectRatio').addEventListener('input', () => {
+                updateSettings();
+                processImage();
+            });
+            document.getElementById('colorMode').addEventListener('change', () => {
+                updateSettings();
+                processImage();
+            });
+            document.getElementById('customBlocks').addEventListener('input', () => {
+                updateSettings();
+                processImage();
+            });
             
             // Action buttons
             processBtn.addEventListener('click', processImage);
             downloadBtn.addEventListener('click', downloadOutput);
             resetBtn.addEventListener('click', resetSettings);
+            
+            // Config save/load buttons
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`saveConfig${i}`).addEventListener('click', () => saveConfig(i));
+                document.getElementById(`loadConfig${i}`).addEventListener('click', () => loadConfig(i));
+            }
         }
 
         // Handle file upload
@@ -492,11 +618,75 @@
                 img.onload = function() {
                     currentImage = img;
                     preview.src = event.target.result;
+                    
+                    // Add to history
+                    addToHistory(event.target.result);
+                    
+                    // Reset file input to allow uploading the same file again
+                    fileInput.value = '';
+                    
                     processImage();
                 }
                 img.src = event.target.result;
             }
             reader.readAsDataURL(file);
+        }
+
+        // Add image to history
+        function addToHistory(dataURL) {
+            // Check if image is already in history
+            if (imageHistory.some(item => item.dataURL === dataURL)) {
+                return;
+            }
+            
+            // Add to beginning of history array
+            imageHistory.unshift({
+                dataURL: dataURL,
+                timestamp: Date.now()
+            });
+            
+            // Keep only the last 10 images
+            if (imageHistory.length > 10) {
+                imageHistory = imageHistory.slice(0, 10);
+            }
+            
+            // Update history display
+            updateHistoryDisplay();
+        }
+
+        // Update history display
+        function updateHistoryDisplay() {
+            historyGrid.innerHTML = '';
+            
+            imageHistory.forEach((item, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                if (index === 0) {
+                    historyItem.classList.add('active');
+                }
+                
+                const img = document.createElement('img');
+                img.src = item.dataURL;
+                img.alt = `History image ${index + 1}`;
+                
+                historyItem.appendChild(img);
+                historyItem.addEventListener('click', () => {
+                    // Load this image
+                    const img = new Image();
+                    img.onload = function() {
+                        currentImage = img;
+                        preview.src = item.dataURL;
+                        processImage();
+                        
+                        // Update active state
+                        document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
+                        historyItem.classList.add('active');
+                    }
+                    img.src = item.dataURL;
+                });
+                
+                historyGrid.appendChild(historyItem);
+            });
         }
 
         // Update settings from UI
@@ -609,6 +799,86 @@
             URL.revokeObjectURL(url);
         }
 
+        // Save configuration to a slot
+        function saveConfig(slot) {
+            const config = {
+                invert: settings.invert,
+                brightness: settings.brightness,
+                contrast: settings.contrast,
+                density: settings.density,
+                resolution: settings.resolution,
+                aspectRatio: settings.aspectRatio,
+                colorMode: settings.colorMode,
+                customBlocks: settings.customBlocks,
+                selectedBlocks: selectedBlocks,
+                name: `Config ${slot}`
+            };
+            
+            localStorage.setItem(`blockConverterConfig${slot}`, JSON.stringify(config));
+            
+            // Update slot name display
+            document.getElementById(`configName${slot}`).textContent = `Slot ${slot}: ${config.name}`;
+            
+            alert(`Configuration saved to slot ${slot}`);
+        }
+
+        // Load configuration from a slot
+        function loadConfig(slot) {
+            const configJSON = localStorage.getItem(`blockConverterConfig${slot}`);
+            
+            if (!configJSON) {
+                alert(`No configuration found in slot ${slot}`);
+                return;
+            }
+            
+            const config = JSON.parse(configJSON);
+            
+            // Apply configuration to UI
+            document.getElementById('invert').checked = config.invert;
+            document.getElementById('brightness').value = config.brightness;
+            document.getElementById('contrast').value = config.contrast * 100;
+            document.getElementById('density').value = config.density;
+            document.getElementById('resolution').value = config.resolution;
+            document.getElementById('aspectRatio').value = config.aspectRatio;
+            document.getElementById('colorMode').value = config.colorMode;
+            document.getElementById('customBlocks').value = config.customBlocks;
+            
+            // Update selected blocks
+            if (config.selectedBlocks) {
+                selectedBlocks = config.selectedBlocks;
+                updateBlockCharsDisplay();
+            }
+            
+            // Update settings and process image
+            updateSettings();
+            processImage();
+            
+            alert(`Configuration loaded from slot ${slot}`);
+        }
+
+        // Update block characters display based on selected blocks
+        function updateBlockCharsDisplay() {
+            document.querySelectorAll('.block-char').forEach(el => {
+                const char = el.textContent;
+                if (selectedBlocks.includes(char)) {
+                    el.classList.add('selected');
+                } else {
+                    el.classList.remove('selected');
+                }
+            });
+        }
+
+        // Load saved configurations on page load
+        function loadSavedConfigurations() {
+            for (let i = 1; i <= 4; i++) {
+                const configJSON = localStorage.getItem(`blockConverterConfig${i}`);
+                if (configJSON) {
+                    const config = JSON.parse(configJSON);
+                    document.getElementById(`configName${i}`).textContent = `Slot ${i}: ${config.name}`;
+                }
+            }
+        }
+
         // Reset settings to default
         function resetSettings() {
             document.getElementById('invert').checked = false;
@@ -634,6 +904,7 @@
             initBlockChars();
             initEventListeners();
             updateSettings();
+            loadSavedConfigurations();
         }
 
         // Start the application
